@@ -1,0 +1,14 @@
+.pytest_cache
+__pycache__
+*.pyc
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+data/
+frontend/.env
+docs/
+review-reports/
+tests/
+.github/

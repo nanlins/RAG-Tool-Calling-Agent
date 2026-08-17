@@ -1,0 +1,7 @@
+target-version = "py313"
+line-length = 120
+exclude = [".venv", "venv", "__pycache__", ".pytest_cache", ".ruff_cache", "data", "examples"]
+
+[lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["BLE001", "DTZ005", "RUF013", "ASYNC230", "S110"]

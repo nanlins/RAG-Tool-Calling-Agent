@@ -1,0 +1,1253 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RAG Agent 工作台</title>
+<style>
+:root{
+  --bg:#f1f5f6; --surface:#ffffff; --line:#dbe3e7; --text:#17282e; --muted:#5c7078;
+  --accent:#0e7490; --accent-strong:#155e75; --accent2:#2563eb; --ok:#0f9d6e;
+  --warn:#d97706; --danger:#dc2626; --soft:#eaf3f5;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{font-family:"Segoe UI","Microsoft YaHei",system-ui,sans-serif;background:var(--bg);color:var(--text);line-height:1.55}
+button,textarea,input,select{font-family:inherit}
+.app{max-width:1240px;margin:0 auto;padding:16px 20px 36px}
+.topbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:12px 0 14px;border-bottom:1px solid var(--line);margin-bottom:12px}
+.brand{display:flex;align-items:center;gap:10px;min-width:220px}
+.brand-mark{width:34px;height:34px;border-radius:7px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;flex:0 0 auto}
+.brand h1{font-size:17px;margin:0;font-weight:700;letter-spacing:0}
+.brand p{margin:0;font-size:12px;color:var(--muted)}
+.controls{margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.runtime-row{display:flex;align-items:center;gap:10px;flex:1 1 560px;min-width:0}
+.runtime-row .field{flex:0 0 220px;min-width:0}
+.runtime-row .select{flex:1;width:100%;min-width:120px}
+.runtime-row .token{flex:1 1 260px;width:auto;min-width:0}
+.field{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+.select{height:34px;min-width:180px;border:1px solid var(--line);border-radius:6px;background:#fff;padding:0 8px;font-size:13px;color:var(--text);outline:none}
+.token{height:34px;width:190px;border:1px solid var(--line);border-radius:6px;background:#fff;padding:0 9px;font-size:13px;color:var(--text);outline:none}
+.status{display:inline-flex;align-items:center;gap:6px;height:34px;padding:0 10px;border:1px solid var(--line);border-radius:6px;background:#fff;font-size:12px;color:var(--muted);white-space:nowrap}
+.dot{width:8px;height:8px;border-radius:50%;background:#c4d0d5}
+.dot.ok{background:var(--ok)}
+.dot.bad{background:var(--danger)}
+.nav{display:flex;gap:4px;background:#e7edef;padding:4px;border-radius:8px;overflow-x:auto;margin-bottom:14px}
+.nav button{border:0;background:transparent;font:inherit;font-size:13px;font-weight:600;color:var(--muted);padding:9px 14px;border-radius:6px;cursor:pointer;white-space:nowrap;display:inline-flex;gap:6px;align-items:center}
+.nav button.active{background:#fff;color:var(--accent-strong);box-shadow:0 1px 2px rgba(16,24,40,.08)}
+.panel{display:none}
+.panel.active{display:block}
+.surface{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px;margin-bottom:14px}
+.section{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px}
+.section h2{font-size:14px;margin:0 0 10px;font-weight:700;display:flex;align-items:center;gap:6px}
+.section h2 .badge{font-size:11px;font-weight:600;color:var(--muted);background:#eef2f4;border-radius:10px;padding:1px 8px}
+.chat-layout{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:14px}
+.chat-main{display:flex;flex-direction:column;min-width:0}
+.chat-scroll{flex:1;overflow-y:auto;max-height:560px;min-height:430px;padding:4px 2px}
+.msg{margin:10px 0;display:flex;flex-direction:column}
+.msg.user{align-items:flex-end}
+.msg .label{font-size:11px;color:var(--muted);margin-bottom:4px;padding:0 3px}
+.msg .bubble{max-width:86%;padding:10px 13px;border-radius:8px;font-size:14px;line-height:1.65;white-space:pre-wrap;word-break:break-word}
+.msg.user .bubble{background:var(--accent);color:#fff}
+.msg.agent .bubble{background:#f4f8f9;border:1px solid var(--line)}
+.msg.agent.error .bubble{background:#fdf1f1;border-color:#f6c9c9;color:#8f1d1d}
+.chat-composer{display:flex;gap:8px;margin-top:10px}
+.chat-composer textarea{flex:1;min-height:46px;max-height:170px;resize:vertical}
+textarea,input[type=text],input[type=password],input[type=number],input[type=url]{width:100%;border:1px solid var(--line);border-radius:6px;background:#fff;padding:10px 12px;font-size:14px;color:var(--text);outline:none;line-height:1.5}
+textarea:focus,input[type=text]:focus,input[type=password]:focus,input[type=number]:focus,input[type=url]:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(14,116,144,.12)}
+.btn{border:1px solid var(--line);background:#fff;color:var(--text);border-radius:6px;padding:9px 14px;font-size:13px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:6px;justify-content:center;min-height:36px}
+.btn:hover{background:#f3f7f8}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{background:var(--accent-strong)}
+.btn.ghost{background:transparent;border-color:transparent;color:var(--muted)}
+.btn.danger{color:var(--danger);border-color:#f2cccc}
+.btn:disabled{opacity:.55;cursor:default}
+.btn .arrow{font-size:15px;line-height:1}
+.step-list{display:flex;flex-direction:column;gap:8px;max-height:330px;overflow-y:auto}
+.step{display:flex;gap:9px;padding:9px 10px;margin:0;border-left:3px solid var(--accent);background:#f0f7f9;border-radius:0 6px 6px 0;font-size:12px;color:var(--text);word-break:break-word}
+.step.action{border-color:var(--warn);background:#fff8eb}
+.step.observation{border-color:var(--ok);background:#effaf5}
+.step.context{border-color:var(--accent2);background:#eef3ff}
+.step .step-icon{flex:0 0 auto}
+.step .step-title{font-weight:700;margin-bottom:2px}
+.step .step-body{white-space:pre-wrap;word-break:break-word}
+.empty{color:var(--muted);text-align:center;padding:26px 8px;font-size:13px}
+.meta-line{font-size:12px;color:var(--muted);display:flex;gap:12px;flex-wrap:wrap;margin-top:8px}
+.file-row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.file-row input[type=file]{max-width:320px;font-size:13px}
+.status-text{font-size:13px;color:var(--muted);min-width:120px}
+.doc-list,.log-list{display:grid;gap:8px}
+.doc-row{display:flex;align-items:center;gap:12px;padding:11px 12px;border:1px solid var(--line);border-radius:8px;background:#fff}
+.doc-main{min-width:0;flex:1}
+.doc-name{font-size:14px;font-weight:600;word-break:break-word}
+.doc-meta{font-size:12px;color:var(--muted);margin-top:2px}
+.tag{display:inline-block;border-radius:4px;padding:1px 7px;font-size:11px;font-weight:600;margin-right:6px}
+.tag.ok{background:#e3f6ee;color:#0b7a54}
+.tag.warn{background:#fff2dd;color:#9a5a05}
+.tag.bad{background:#fdeaea;color:#b3261e}
+.query-row{display:flex;gap:10px;align-items:flex-start}
+.query-row textarea{flex:1;min-height:70px}
+.rag-item{padding:11px 12px;border:1px solid var(--line);border-radius:8px;margin-bottom:8px;background:#fff}
+.rag-item .rag-head{display:flex;justify-content:space-between;gap:10px;font-size:12px;color:var(--muted);margin-bottom:5px}
+.rag-item .rag-text{font-size:13px;white-space:pre-wrap;word-break:break-word}
+.tool-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
+.tool-item{border:1px solid var(--line);border-radius:8px;padding:13px;background:#fff}
+.tool-name{font-size:14px;font-weight:700;color:var(--accent-strong);word-break:break-word}
+.tool-desc{font-size:12px;color:var(--muted);margin-top:5px;word-break:break-word}
+.tool-params{font-size:11px;color:#83949b;margin-top:7px;word-break:break-word}
+.log-item{padding:12px;border:1px solid var(--line);border-radius:8px;background:#fff}
+.log-q{font-size:13px;font-weight:600;margin-bottom:3px;word-break:break-word}
+.log-a{font-size:13px;color:#33464e;white-space:pre-wrap;word-break:break-word;margin-bottom:5px}
+.log-meta{font-size:11px;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap}
+.side{display:flex;flex-direction:column;gap:14px}
+.form-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px}
+.form-grid label{display:flex;flex-direction:column;gap:5px;font-size:12px;color:var(--muted)}
+.form-grid label input,.form-grid label select{width:100%;min-width:0}
+.checkbox-row{display:flex;gap:16px;flex-wrap:wrap;padding:8px 0 2px}
+.checkbox-row label{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--text)}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.warn-line{background:#fff8eb;border:1px solid #f2d9a8;color:#9a5a05;border-radius:6px;padding:9px 11px;font-size:13px;margin:10px 0}
+.provider-note{font-size:12px;color:var(--muted);margin:0 0 12px}
+.provider-status{margin-top:10px}
+.hidden{display:none}
+@media (max-width:900px){
+  .chat-layout{grid-template-columns:1fr}
+  .controls{margin-left:0;width:100%}
+  .runtime-row{flex-wrap:wrap}
+  .runtime-row .field{flex:1 1 200px}
+  .runtime-row .token{flex:1 1 100%;width:100%}
+  .token{width:100%}
+  .select{flex:1}
+}
+@media (max-width:560px){
+  .app{padding:12px 10px 28px}
+  .nav button{padding:8px 10px}
+  .chat-composer{flex-wrap:wrap}
+  .chat-composer textarea{min-width:100%}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark">R</div>
+      <div>
+        <h1>RAG Agent 工作台</h1>
+        <p>文档检索 · 工具调用 · 多轮对话</p>
+      </div>
+    </div>
+    <div class="controls">
+      <div class="runtime-row">
+        <label class="field">模型 <select id="modelSelect" class="select"></select></label>
+        <label class="field">Embedding <select id="embeddingSelect" class="select"></select></label>
+        <input id="tokenInput" class="token" type="password" placeholder="访问令牌（默认 local-demo）" autocomplete="off">
+      </div>
+      <span class="status" title="当前向量库 Embedding 配置"><span id="profileDot" class="dot"></span><span id="profileText">向量库加载中</span></span>
+      <span class="status"><span id="healthDot" class="dot"></span><span id="healthText">连接中</span></span>
+    </div>
+  </header>
+
+  <nav class="nav" id="nav" aria-label="功能页">
+    <button class="active" data-tab="0">对话</button>
+    <button data-tab="1">文档管理</button>
+    <button data-tab="2">RAG 测试</button>
+    <button data-tab="3">工具列表</button>
+    <button data-tab="4">日志</button>
+    <button data-tab="5">供应商管理</button>
+  </nav>
+
+  <section class="panel active" id="p0">
+    <div class="surface chat-layout">
+      <div class="chat-main">
+        <div id="chatScroll" class="chat-scroll" aria-live="polite"></div>
+        <div class="chat-composer">
+          <textarea id="chatInput" rows="2" placeholder="输入问题..."></textarea>
+          <button id="sendBtn" class="btn primary">发送</button>
+          <button id="clearBtn" class="btn ghost">新对话</button>
+        </div>
+      </div>
+      <aside class="side">
+        <div class="section">
+          <h2>运行信息</h2>
+          <div id="convInfo" class="meta-line"><span>会话未开始</span></div>
+        </div>
+        <div class="section">
+          <h2>推理过程</h2>
+          <div id="stepPanel" class="step-list"><div class="empty">暂无</div></div>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <section class="panel" id="p1">
+    <div class="surface">
+      <div class="file-row">
+        <input id="fileInput" type="file" accept=".pdf,.md,.txt,.markdown">
+        <button id="uploadBtn" class="btn primary">上传</button>
+        <span id="uploadStatus" class="status-text"></span>
+      </div>
+    </div>
+    <div class="surface">
+      <h2>已导入文档</h2>
+      <div id="docList" class="doc-list"></div>
+    </div>
+  </section>
+
+  <section class="panel" id="p2">
+    <div class="surface">
+      <div class="query-row">
+        <textarea id="ragInput" rows="3" placeholder="输入检索关键词..."></textarea>
+        <button id="ragBtn" class="btn primary">检索</button>
+      </div>
+      <div id="ragMeta" class="meta-line"></div>
+      <div id="ragResults"></div>
+    </div>
+  </section>
+
+  <section class="panel" id="p3">
+    <div class="surface">
+      <h2>可用工具</h2>
+      <div id="toolList" class="tool-grid"></div>
+    </div>
+  </section>
+
+  <section class="panel" id="p4">
+    <div class="surface">
+      <h2>Agent 日志</h2>
+      <div id="logList" class="log-list"></div>
+    </div>
+  </section>
+
+  <section class="panel" id="p5">
+    <div class="surface">
+      <h2>自定义供应商</h2>
+      <p class="provider-note">非敏感配置保存在浏览器本地；API Key 仅保存在当前页面会话，关闭页面后清除。保存后无需重启服务即可测试和切换。</p>
+      <form id="providerForm" class="provider-form">
+        <div class="form-grid">
+          <label>名称 <input id="pName" type="text" placeholder="如 kimi、my-gateway" autocomplete="off"></label>
+          <label>显示名 <input id="pDisplay" type="text" placeholder="如 Kimi" autocomplete="off"></label>
+          <label>Base URL <input id="pBaseUrl" type="text" placeholder="https://api.example.com/v1" autocomplete="off"></label>
+          <label>API Key <input id="pApiKey" type="password" placeholder="编辑时留空沿用旧 Key" autocomplete="off"></label>
+          <label>聊天模型 <input id="pChatModel" type="text" placeholder="如 deepseek-chat" autocomplete="off"></label>
+          <label>Embedding 模型 <input id="pEmbeddingModel" type="text" placeholder="留空表示不支持" autocomplete="off"></label>
+          <label>Embedding 维度 <input id="pEmbeddingDims" type="number" min="1" placeholder="可选，如 1536"></label>
+          <label>协议 <select id="pProtocol">
+            <option value="openai">OpenAI 兼容</option>
+            <option value="anthropic">Anthropic 风格</option>
+          </select></label>
+        </div>
+        <div class="checkbox-row">
+          <label><input id="pSupportsChat" type="checkbox" checked> 支持聊天</label>
+          <label><input id="pSupportsEmbedding" type="checkbox"> 支持 Embedding</label>
+          <label><input id="pNativeJson" type="checkbox" checked> 原生 JSON 模式</label>
+        </div>
+        <div class="btn-row">
+          <button type="submit" id="saveProviderBtn" class="btn primary">保存供应商</button>
+          <button type="button" id="testChatBtn" class="btn">测试 Chat</button>
+          <button type="button" id="testEmbedBtn" class="btn">测试 Embedding</button>
+          <button type="button" id="resetProviderBtn" class="btn ghost">清空表单</button>
+        </div>
+      </form>
+      <div id="providerTestStatus" class="status-text provider-status"></div>
+    </div>
+    <div class="surface">
+      <h2>内置供应商</h2>
+      <div id="providerBuiltin" class="doc-list"></div>
+    </div>
+    <div class="surface">
+      <h2>自定义供应商列表</h2>
+      <div id="providerList" class="doc-list"></div>
+    </div>
+    <div class="surface">
+      <h2>向量库 Embedding</h2>
+      <div id="vectorProfile" class="meta-line"></div>
+      <div id="embeddingWarn" class="warn-line hidden"></div>
+      <div class="btn-row">
+        <button id="rebuildBtn" class="btn danger">重建索引</button>
+      </div>
+    </div>
+  </section>
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var $ = function (id) { return document.getElementById(id); };
+  var chatScroll = $("chatScroll");
+  var stepPanel = $("stepPanel");
+  var convInfo = $("convInfo");
+  var modelSelect = $("modelSelect");
+  var embeddingSelect = $("embeddingSelect");
+  var chatInput = $("chatInput");
+  var sendBtn = $("sendBtn");
+
+  var convId = "";
+  var currentProvider = "";
+  var currentModel = "";
+  var currentEmbedding = "";
+  var currentEmbeddingModel = "";
+  var streaming = false;
+  var builtinModels = {};
+  var customProviders = loadLocalProviders();
+  var vectorProfile = null;
+  var editingProviderName = "";
+
+  function el(tag, className, text) {
+    var node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined && text !== null) node.textContent = text;
+    return node;
+  }
+
+  function apiHeaders(json) {
+    var headers = {};
+    var token = sessionStorage.getItem("rag_token") || "local-demo";
+    if (token) headers["X-API-Token"] = token;
+    if (json) headers["Content-Type"] = "application/json";
+    return headers;
+  }
+
+  function providerLabel(provider) {
+    var labels = {
+      dashscope: "通义千问",
+      deepseek: "DeepSeek",
+      openai: "OpenAI",
+      anthropic: "Claude"
+    };
+    return labels[provider] || provider;
+  }
+
+  function statusText(status) {
+    var map = {
+      indexed: "已入库",
+      pending: "处理中",
+      partial: "部分入库",
+      failed: "失败",
+      empty: "内容为空"
+    };
+    return map[status] || status || "未知";
+  }
+
+  function statusTag(status) {
+    var span = el("span", "tag");
+    if (status === "indexed") span.className = "tag ok";
+    else if (status === "partial") span.className = "tag warn";
+    else if (status === "failed" || status === "empty") span.className = "tag bad";
+    else span.className = "tag warn";
+    span.textContent = statusText(status);
+    return span;
+  }
+
+  function setStatus(text, ok) {
+    var dot = $("healthDot");
+    var label = $("healthText");
+    label.textContent = text;
+    dot.className = "dot" + (ok === true ? " ok" : ok === false ? " bad" : "");
+  }
+
+  function appendMessage(role, text, isError) {
+    var wrap = el("div", "msg " + role + (isError ? " error" : ""));
+    var label = el("div", "label", role === "user" ? "你" : "Agent");
+    var bubble = el("div", "bubble", text);
+    wrap.appendChild(label);
+    wrap.appendChild(bubble);
+    chatScroll.appendChild(wrap);
+    chatScroll.scrollTop = chatScroll.scrollHeight;
+    return bubble;
+  }
+
+  function clearSteps() {
+    stepPanel.replaceChildren(el("div", "empty", "暂无"));
+  }
+
+  function addStep(kind, text) {
+    var empty = stepPanel.querySelector(".empty");
+    if (empty) empty.remove();
+    var step = el("div", "step");
+    if (kind === "action") step.classList.add("action");
+    if (kind === "observation") step.classList.add("observation");
+    if (kind === "context") step.classList.add("context");
+    var icon = el("span", "step-icon", kind === "action" ? "▸" : kind === "observation" ? "◂" : "·");
+    var bodyWrap = el("div");
+    var title = el("div", "step-title", {
+      thought: "思考",
+      action: "调用工具",
+      observation: "工具结果",
+      context: "知识库检索"
+    }[kind] || kind);
+    var body = el("div", "step-body", text);
+    bodyWrap.appendChild(title);
+    bodyWrap.appendChild(body);
+    step.appendChild(icon);
+    step.appendChild(bodyWrap);
+    stepPanel.appendChild(step);
+    stepPanel.scrollTop = stepPanel.scrollHeight;
+  }
+
+  function updateConvInfo(evt) {
+    convInfo.replaceChildren();
+    var parts = [];
+    if (convId) parts.push("会话 " + convId.slice(0, 10));
+    if (evt && evt.elapsed_ms !== undefined) parts.push("耗时 " + Math.round(evt.elapsed_ms) + "ms");
+    if (evt && evt.usage && evt.usage.total_tokens !== undefined) parts.push("Token " + evt.usage.total_tokens);
+    if (evt && evt.warning) parts.push("提示 " + evt.warning);
+    if (!parts.length) parts.push("会话未开始");
+    parts.forEach(function (p) { convInfo.appendChild(el("span", null, p)); });
+  }
+
+  function providerDisplay(p) {
+    return (p && p.display_name) || (p && p.name) || "";
+  }
+
+  function providerKey(name) {
+    return "rag_provider_key_" + name;
+  }
+
+  function getProviderKey(name) {
+    return sessionStorage.getItem(providerKey(name)) || "";
+  }
+
+  function setProviderKey(name, key) {
+    if (key) sessionStorage.setItem(providerKey(name), key);
+  }
+
+  function copyProvider(p) {
+    return {
+      name: p.name || "",
+      display_name: p.display_name || "",
+      base_url: p.base_url || "",
+      chat_model: p.chat_model || "",
+      embedding_model: p.embedding_model || "",
+      embedding_dimensions: (p.embedding_dimensions === undefined || p.embedding_dimensions === null || p.embedding_dimensions === "") ? null : Number(p.embedding_dimensions),
+      supports_chat: p.supports_chat !== false,
+      supports_embedding: !!p.supports_embedding,
+      anthropic_style: !!p.anthropic_style,
+      native_json_mode: p.native_json_mode !== false
+    };
+  }
+
+  function loadLocalProviders() {
+    try {
+      var data = JSON.parse(localStorage.getItem("rag_providers_v1") || "[]");
+      return Array.isArray(data) ? data.filter(function (p) { return p && p.name; }).map(copyProvider) : [];
+    } catch (err) {
+      return [];
+    }
+  }
+
+  function saveLocalProviders() {
+    localStorage.setItem("rag_providers_v1", JSON.stringify(customProviders.map(copyProvider)));
+  }
+
+  function findProvider(name) {
+    var found = null;
+    customProviders.forEach(function (p) {
+      if (p.name === name) found = p;
+    });
+    return found;
+  }
+
+  function chatProviderConfig() {
+    var p = findProvider(currentProvider);
+    if (!p) return null;
+    var cfg = copyProvider(p);
+    cfg.api_key = getProviderKey(p.name);
+    cfg.chat_model = currentModel || p.chat_model;
+    return cfg;
+  }
+
+  function embeddingProviderConfig() {
+    var p = findProvider(currentEmbedding);
+    if (!p) return null;
+    var cfg = copyProvider(p);
+    cfg.api_key = getProviderKey(p.name);
+    cfg.embedding_model = currentEmbeddingModel || p.embedding_model;
+    return cfg;
+  }
+
+  function renderModelOptions() {
+    modelSelect.replaceChildren();
+    var options = [];
+    Object.keys(builtinModels).forEach(function (provider) {
+      var info = builtinModels[provider] || {};
+      if (info.chat_model) {
+        options.push({ key: provider, label: providerLabel(provider) + " · " + info.chat_model, model: info.chat_model });
+      }
+    });
+    customProviders.forEach(function (p) {
+      if (p.supports_chat && p.chat_model) {
+        options.push({ key: p.name, label: providerDisplay(p) + " · " + p.chat_model, model: p.chat_model });
+      }
+    });
+    if (!options.length) {
+      var none = el("option", null, "未配置可用模型");
+      none.disabled = true;
+      none.selected = true;
+      modelSelect.appendChild(none);
+      currentProvider = "";
+      currentModel = "";
+      return;
+    }
+    options.forEach(function (o) {
+      var opt = el("option", null, o.label);
+      opt.value = o.key;
+      opt.dataset.model = o.model;
+      modelSelect.appendChild(opt);
+    });
+    if (currentProvider) modelSelect.value = currentProvider;
+    applyModelSelection();
+  }
+
+  function renderEmbeddingOptions() {
+    embeddingSelect.replaceChildren();
+    var options = [];
+    Object.keys(builtinModels).forEach(function (provider) {
+      var info = builtinModels[provider] || {};
+      if (info.embedding_model) {
+        options.push({ key: provider, model: info.embedding_model, label: providerLabel(provider) + " · " + info.embedding_model });
+      }
+    });
+    customProviders.forEach(function (p) {
+      if (p.supports_embedding && p.embedding_model) {
+        options.push({ key: p.name, model: p.embedding_model, label: providerDisplay(p) + " · " + p.embedding_model });
+      }
+    });
+    if (!options.length) {
+      var none = el("option", null, "无可用 Embedding");
+      none.disabled = true;
+      none.selected = true;
+      embeddingSelect.appendChild(none);
+      currentEmbedding = "";
+      currentEmbeddingModel = "";
+      return;
+    }
+    options.forEach(function (o) {
+      var opt = el("option", null, o.label);
+      opt.value = o.key;
+      opt.dataset.model = o.model;
+      embeddingSelect.appendChild(opt);
+    });
+    if (currentEmbedding) embeddingSelect.value = currentEmbedding;
+    applyEmbeddingSelection();
+  }
+
+  function applyEmbeddingSelection() {
+    if (!embeddingSelect.selectedOptions.length) {
+      currentEmbedding = "";
+      currentEmbeddingModel = "";
+      updateEmbeddingWarn();
+      return;
+    }
+    currentEmbedding = embeddingSelect.value;
+    currentEmbeddingModel = embeddingSelect.selectedOptions[0].dataset.model || "";
+    updateEmbeddingWarn();
+  }
+
+  function updateEmbeddingWarn() {
+    var warn = $("embeddingWarn");
+    if (!warn) return;
+    if (!vectorProfile || !currentEmbeddingModel || !vectorProfile.total_chunks) {
+      warn.classList.add("hidden");
+      return;
+    }
+    var profileModel = vectorProfile.embedding_model || "";
+    if (profileModel && profileModel !== currentEmbeddingModel) {
+      warn.textContent = "向量库由 " + profileModel + " 生成，切换到 " + currentEmbeddingModel + " 后上传/检索会被 409 拦截，请先重建索引";
+      warn.classList.remove("hidden");
+    } else {
+      warn.classList.add("hidden");
+    }
+  }
+
+  function loadModels() {
+    fetch("/v1/models", { headers: apiHeaders(false) })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        builtinModels = d.data || {};
+        renderModelOptions();
+        renderEmbeddingOptions();
+        renderProviders();
+      })
+      .catch(function () {
+        builtinModels = {};
+        renderModelOptions();
+        renderEmbeddingOptions();
+        renderProviders();
+      });
+  }
+
+  function applyModelSelection() {
+    if (!modelSelect.selectedOptions.length) {
+      currentProvider = "";
+      currentModel = "";
+      return;
+    }
+    currentProvider = modelSelect.value;
+    currentModel = modelSelect.selectedOptions[0].dataset.model || "";
+  }
+
+  modelSelect.addEventListener("change", applyModelSelection);
+  embeddingSelect.addEventListener("change", applyEmbeddingSelection);
+
+  function loadHealth() {
+    fetch("/health", { headers: apiHeaders(false) })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (d.status === "ok") setStatus("服务正常", true);
+        else setStatus("服务降级", false);
+      })
+      .catch(function () { setStatus("连接失败", false); });
+  }
+
+  function handleChatEvent(evt, bubble) {
+    if (!evt || typeof evt !== "object") return;
+    if (evt.type === "start") {
+      if (evt.conversation_id) convId = evt.conversation_id;
+      updateConvInfo(null);
+      return;
+    }
+    if (evt.type === "token" && evt.content) {
+      bubble.appendChild(document.createTextNode(evt.content));
+      chatScroll.scrollTop = chatScroll.scrollHeight;
+      return;
+    }
+    if (evt.type === "thought" && evt.content) {
+      addStep("thought", evt.content);
+      return;
+    }
+    if (evt.type === "action") {
+      var argsText = JSON.stringify(evt.tool_args || {});
+      addStep("action", (evt.tool_name || "未知工具") + "  " + argsText);
+      return;
+    }
+    if (evt.type === "observation" && evt.tool_result) {
+      addStep("observation", String(evt.tool_result).slice(0, 400));
+      return;
+    }
+    if (evt.type === "context" && evt.content) {
+      addStep("context", String(evt.content).slice(0, 300));
+      return;
+    }
+    if (evt.type === "answer" && evt.content && !bubble.textContent) {
+      bubble.textContent = evt.content;
+      chatScroll.scrollTop = chatScroll.scrollHeight;
+      return;
+    }
+    if (evt.type === "error") {
+      appendMessage("agent", evt.error || "处理出错", true);
+      return;
+    }
+    if (evt.type === "done") {
+      updateConvInfo(evt);
+      if (evt.conversation_id) convId = evt.conversation_id;
+    }
+  }
+
+  function parseSSEBlock(block) {
+    var lines = block.split("\n");
+    var dataLines = [];
+    lines.forEach(function (line) {
+      if (line.indexOf("data:") === 0) dataLines.push(line.slice(5).trim());
+    });
+    return dataLines.join("\n");
+  }
+
+  async function send() {
+    var msg = chatInput.value.trim();
+    if (!msg || streaming) return;
+    if (!currentProvider) {
+      appendMessage("agent", "当前没有可用模型，请先在环境变量中配置 API Key", true);
+      return;
+    }
+    chatInput.value = "";
+    sendBtn.disabled = true;
+    streaming = true;
+    clearSteps();
+    appendMessage("user", msg);
+    var bubble = appendMessage("agent", "");
+
+    try {
+      var resp = await fetch("/v1/agent/chat/stream", {
+        method: "POST",
+        headers: apiHeaders(true),
+        body: JSON.stringify({
+          message: msg,
+          conversation_id: convId || null,
+          provider: currentProvider,
+          model: currentModel,
+          stream: true,
+          provider_config: chatProviderConfig()
+        })
+      });
+
+      if (!resp.ok) {
+        var errBody = null;
+        try { errBody = await resp.json(); } catch (e) { errBody = null; }
+        if (resp.status === 401) {
+          bubble.textContent = "未授权：请填写正确的访问令牌（默认 local-demo）";
+          return;
+        }
+        var errText = (errBody && errBody.detail) || (errBody && errBody.error) || ("请求失败 HTTP " + resp.status);
+        bubble.textContent = errText;
+        return;
+      }
+
+      if (!resp.body) {
+        bubble.textContent = "浏览器不支持流式读取";
+        return;
+      }
+
+      var reader = resp.body.getReader();
+      var decoder = new TextDecoder();
+      var buffer = "";
+      while (true) {
+        var chunk = await reader.read();
+        if (chunk.done) break;
+        buffer += decoder.decode(chunk.value, { stream: true });
+        var parts = buffer.split("\n\n");
+        buffer = parts.pop();
+        for (var i = 0; i < parts.length; i++) {
+          var raw = parseSSEBlock(parts[i]);
+          if (!raw || raw === "[DONE]") continue;
+          var evt = null;
+          try { evt = JSON.parse(raw); } catch (e) { continue; }
+          handleChatEvent(evt, bubble);
+        }
+      }
+    } catch (err) {
+      bubble.textContent = "连接错误: " + (err.message || String(err));
+    } finally {
+      streaming = false;
+      sendBtn.disabled = false;
+      chatInput.focus();
+    }
+  }
+
+  sendBtn.addEventListener("click", send);
+  chatInput.addEventListener("keydown", function (e) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      send();
+    }
+  });
+
+  $("clearBtn").addEventListener("click", function () {
+    convId = "";
+    chatScroll.replaceChildren();
+    clearSteps();
+    updateConvInfo(null);
+    chatInput.focus();
+  });
+
+  $("tokenInput").value = sessionStorage.getItem("rag_token") || "local-demo";
+  $("tokenInput").addEventListener("change", function () {
+    sessionStorage.setItem("rag_token", this.value.trim());
+  });
+
+  var nav = $("nav");
+  nav.addEventListener("click", function (e) {
+    var btn = e.target.closest("button");
+    if (!btn) return;
+    var idx = btn.dataset.tab;
+    Array.prototype.forEach.call(nav.querySelectorAll("button"), function (b) {
+      b.classList.toggle("active", b === btn);
+    });
+    Array.prototype.forEach.call(document.querySelectorAll(".panel"), function (p) {
+      p.classList.toggle("active", p.id === "p" + idx);
+    });
+    if (idx === "1") loadDocs();
+    if (idx === "3") loadTools();
+    if (idx === "4") loadLogs();
+    if (idx === "5") loadProviderTab();
+  });
+
+  function loadDocs() {
+    var list = $("docList");
+    list.replaceChildren(listLoading());
+    fetch("/v1/documents", { headers: apiHeaders(false) })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d.success) throw new Error(d.error || "加载失败");
+        list.replaceChildren();
+        if (!d.data || !d.data.length) {
+          list.appendChild(el("div", "empty", "暂无文档"));
+          return;
+        }
+        d.data.forEach(function (doc) { list.appendChild(docRow(doc)); });
+      })
+      .catch(function (err) {
+        list.replaceChildren(el("div", "empty", "加载失败: " + (err.message || "未知错误")));
+      });
+  }
+
+  function listLoading() {
+    return el("div", "empty", "加载中...");
+  }
+
+  function docRow(doc) {
+    var row = el("div", "doc-row");
+    var main = el("div", "doc-main");
+    var name = el("div", "doc-name", doc.filename || "未命名");
+    var meta = el("div", "doc-meta");
+    meta.appendChild(statusTag(doc.ingest_status || ""));
+    meta.appendChild(document.createTextNode(
+      (doc.doc_type || "").toUpperCase() + " · " + (doc.chunk_count || 0) + " 片段 · " +
+      (doc.chunks_added || 0) + " 已入库 · " + (doc.uploaded_at || "").slice(0, 16)
+    ));
+    main.appendChild(name);
+    main.appendChild(meta);
+    var delBtn = el("button", "btn danger", "删除");
+    delBtn.addEventListener("click", function () { deleteDoc(doc.id); });
+    row.appendChild(main);
+    row.appendChild(delBtn);
+    return row;
+  }
+
+  async function deleteDoc(id) {
+    var resp = await fetch("/v1/documents/" + encodeURIComponent(id), {
+      method: "DELETE",
+      headers: apiHeaders(false)
+    });
+    loadDocs();
+    if (!resp.ok) {
+      try {
+        var d = await resp.json();
+        alert(d.error || "删除失败");
+      } catch (e) { alert("删除失败"); }
+    }
+  }
+
+  async function uploadFile() {
+    var fileInput = $("fileInput");
+    var file = fileInput.files[0];
+    if (!file) return;
+    var status = $("uploadStatus");
+    status.textContent = "上传处理中...";
+    $("uploadBtn").disabled = true;
+    try {
+      var fd = new FormData();
+      fd.append("file", file);
+      var embedCfg = embeddingProviderConfig();
+      if (embedCfg) fd.append("provider_config_json", JSON.stringify(embedCfg));
+      var resp = await fetch("/v1/documents/upload", {
+        method: "POST",
+        headers: apiHeaders(false),
+        body: fd
+      });
+      var d = await resp.json();
+      if (resp.ok && d.success) {
+        var data = d.data || {};
+        status.textContent = "上传成功：" + (data.filename || file.name) + "，已入库 " + (data.chunks_added || 0) + " 个片段";
+        if (d.warning) status.textContent += "（" + d.warning + "）";
+      } else {
+        var ed = (d.data && d.data.ingest_status ? statusText(d.data.ingest_status) + "： " : "") + (d.error || "上传失败");
+        status.textContent = ed;
+      }
+      fileInput.value = "";
+      loadDocs();
+    } catch (err) {
+      status.textContent = "上传失败: " + (err.message || "未知错误");
+    } finally {
+      $("uploadBtn").disabled = false;
+    }
+  }
+
+  $("uploadBtn").addEventListener("click", uploadFile);
+
+  async function ragSearch() {
+    var q = $("ragInput").value.trim();
+    if (!q) return;
+    var results = $("ragResults");
+    var meta = $("ragMeta");
+    results.replaceChildren(el("div", "empty", "检索中..."));
+    meta.textContent = "";
+    $("ragBtn").disabled = true;
+    try {
+      var resp = await fetch("/v1/rag/query", {
+        method: "POST",
+        headers: apiHeaders(true),
+        body: JSON.stringify({ query: q, top_k: 5, provider_config: embeddingProviderConfig() })
+      });
+      var d = await resp.json();
+      if (!resp.ok || !d.success) throw new Error(d.error || "检索失败");
+      results.replaceChildren();
+      meta.textContent = "共 " + (d.total_chunks || 0) + " 条结果，耗时 " + Math.round(d.elapsed_ms || 0) + "ms";
+      if (!d.chunks || !d.chunks.length) {
+        results.appendChild(el("div", "empty", "未找到相关片段"));
+        return;
+      }
+      d.chunks.forEach(function (c) {
+        var item = el("div", "rag-item");
+        var head = el("div", "rag-head");
+        head.appendChild(el("span", null, "来源 " + (c.source || "未知")));
+        head.appendChild(el("span", null, "相关度 " + Number(c.score || 0).toFixed(3)));
+        var text = el("div", "rag-text", c.text || "");
+        item.appendChild(head);
+        item.appendChild(text);
+        results.appendChild(item);
+      });
+    } catch (err) {
+      results.replaceChildren(el("div", "empty", "检索失败: " + (err.message || "未知错误")));
+    } finally {
+      $("ragBtn").disabled = false;
+    }
+  }
+
+  $("ragBtn").addEventListener("click", ragSearch);
+  $("ragInput").addEventListener("keydown", function (e) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      ragSearch();
+    }
+  });
+
+  function loadTools() {
+    var list = $("toolList");
+    list.replaceChildren(listLoading());
+    fetch("/v1/tools", { headers: apiHeaders(false) })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d.success) throw new Error(d.error || "加载失败");
+        list.replaceChildren();
+        if (!d.data || !d.data.length) {
+          list.appendChild(el("div", "empty", "暂无工具"));
+          return;
+        }
+        d.data.forEach(function (t) {
+          var item = el("div", "tool-item");
+          var name = el("div", "tool-name", t.name || "");
+          var desc = el("div", "tool-desc", t.description || "");
+          var params = t.parameters || {};
+          var props = params.properties ? Object.keys(params.properties).join("、") : "无参数";
+          var required = params.required && params.required.length ? " · 必填: " + params.required.join("、") : "";
+          var paramsLine = el("div", "tool-params", "参数: " + props + required);
+          item.appendChild(name);
+          item.appendChild(desc);
+          item.appendChild(paramsLine);
+          list.appendChild(item);
+        });
+      })
+      .catch(function (err) {
+        list.replaceChildren(el("div", "empty", "加载失败: " + (err.message || "未知错误")));
+      });
+  }
+
+  function loadLogs() {
+    var list = $("logList");
+    list.replaceChildren(listLoading());
+    fetch("/v1/agent/logs", { headers: apiHeaders(false) })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d.success) throw new Error(d.error || "加载失败");
+        list.replaceChildren();
+        if (!d.data || !d.data.length) {
+          list.appendChild(el("div", "empty", "暂无日志"));
+          return;
+        }
+        d.data.forEach(function (l) {
+          var item = el("div", "log-item");
+          var q = el("div", "log-q", "Q: " + (l.question || ""));
+          var a = el("div", "log-a", String(l.final_answer || "").slice(0, 240));
+          var meta = el("div", "log-meta");
+          meta.appendChild(el("span", null, l.timestamp || ""));
+          meta.appendChild(el("span", null, l.model || ""));
+          meta.appendChild(el("span", null, (l.elapsed_ms || 0).toFixed(0) + "ms"));
+          meta.appendChild(el("span", null, "Token " + (l.total_tokens || 0)));
+          item.appendChild(q);
+          item.appendChild(a);
+          item.appendChild(meta);
+          list.appendChild(item);
+        });
+      })
+      .catch(function (err) {
+        list.replaceChildren(el("div", "empty", "加载失败: " + (err.message || "未知错误")));
+      });
+  }
+
+  function providerFormConfig() {
+    var name = $("pName").value.trim();
+    var baseUrl = $("pBaseUrl").value.trim();
+    if (!name) throw new Error("请填写供应商名称");
+    if (!baseUrl) throw new Error("请填写 Base URL");
+    var apiKey = $("pApiKey").value.trim();
+    if (!apiKey) {
+      apiKey = getProviderKey(editingProviderName || name);
+      if (!apiKey) throw new Error("请填写 API Key");
+    }
+    var dims = $("pEmbeddingDims").value.trim();
+    return {
+      name: name,
+      display_name: $("pDisplay").value.trim() || name,
+      base_url: baseUrl,
+      api_key: apiKey,
+      chat_model: $("pChatModel").value.trim(),
+      embedding_model: $("pEmbeddingModel").value.trim(),
+      embedding_dimensions: dims === "" ? null : Number(dims),
+      supports_chat: $("pSupportsChat").checked,
+      supports_embedding: $("pSupportsEmbedding").checked,
+      anthropic_style: $("pProtocol").value === "anthropic",
+      native_json_mode: $("pNativeJson").checked
+    };
+  }
+
+  function resetProviderForm() {
+    editingProviderName = "";
+    $("pName").disabled = false;
+    $("pName").value = "";
+    $("pDisplay").value = "";
+    $("pBaseUrl").value = "";
+    $("pApiKey").value = "";
+    $("pChatModel").value = "";
+    $("pEmbeddingModel").value = "";
+    $("pEmbeddingDims").value = "";
+    $("pSupportsChat").checked = true;
+    $("pSupportsEmbedding").checked = false;
+    $("pProtocol").value = "openai";
+    $("pNativeJson").checked = true;
+    $("saveProviderBtn").textContent = "保存供应商";
+  }
+
+  function saveProvider(e) {
+    e.preventDefault();
+    var status = $("providerTestStatus");
+    try {
+      var cfg = providerFormConfig();
+      var oldName = editingProviderName;
+      if (oldName && oldName !== cfg.name) {
+        var oldKey = getProviderKey(oldName);
+        sessionStorage.removeItem(providerKey(oldName));
+        if (oldKey) setProviderKey(cfg.name, oldKey);
+      } else {
+        setProviderKey(cfg.name, cfg.api_key);
+      }
+      var stored = copyProvider(cfg);
+      var existed = false;
+      customProviders = customProviders.map(function (p) {
+        if (p.name === cfg.name) {
+          existed = true;
+          return stored;
+        }
+        return p;
+      });
+      if (!existed) customProviders.push(stored);
+      saveLocalProviders();
+      resetProviderForm();
+      renderProviders();
+      renderModelOptions();
+      renderEmbeddingOptions();
+      status.textContent = "已保存供应商：" + cfg.name;
+    } catch (err) {
+      status.textContent = "保存失败：" + (err.message || "未知错误");
+    }
+  }
+
+  function editProvider(name) {
+    var p = findProvider(name);
+    if (!p) return;
+    editingProviderName = name;
+    $("pName").value = p.name;
+    $("pName").disabled = true;
+    $("pDisplay").value = p.display_name || "";
+    $("pBaseUrl").value = p.base_url || "";
+    $("pApiKey").value = "";
+    $("pChatModel").value = p.chat_model || "";
+    $("pEmbeddingModel").value = p.embedding_model || "";
+    $("pEmbeddingDims").value = p.embedding_dimensions == null ? "" : p.embedding_dimensions;
+    $("pSupportsChat").checked = !!p.supports_chat;
+    $("pSupportsEmbedding").checked = !!p.supports_embedding;
+    $("pProtocol").value = p.anthropic_style ? "anthropic" : "openai";
+    $("pNativeJson").checked = p.native_json_mode !== false;
+    $("saveProviderBtn").textContent = "更新供应商";
+    $("providerTestStatus").textContent = "正在编辑 " + name + "，API Key 留空表示沿用已保存的 Key";
+  }
+
+  function deleteProvider(name) {
+    if (!window.confirm("删除供应商 " + name + "？")) return;
+    customProviders = customProviders.filter(function (p) { return p.name !== name; });
+    sessionStorage.removeItem(providerKey(name));
+    saveLocalProviders();
+    if (currentProvider === name) currentProvider = "";
+    if (currentEmbedding === name) currentEmbedding = "";
+    renderProviders();
+    renderModelOptions();
+    renderEmbeddingOptions();
+  }
+
+  async function runProviderTest(cfg, type) {
+    var status = $("providerTestStatus");
+    status.textContent = type === "chat" ? "测试 Chat 中..." : "测试 Embedding 中...";
+    try {
+      var resp = await fetch("/v1/providers/test", {
+        method: "POST",
+        headers: apiHeaders(true),
+        body: JSON.stringify({ provider_config: cfg, test_type: type, sample_message: "ping" })
+      });
+      var d = await resp.json();
+      if (resp.ok && d.success) {
+        var info = d.data || {};
+        var line = "连接成功：" + (info.provider || cfg.name) + " · " + (info.model || "") +
+          (info.dimensions ? " · " + info.dimensions + " 维" : "") + " · " + Math.round(info.elapsed_ms || 0) + "ms";
+        if (info.reply) line += " · 回复：" + String(info.reply).slice(0, 80);
+        status.textContent = line;
+      } else {
+        status.textContent = "连接失败：" + (d.error || ("HTTP " + resp.status));
+      }
+    } catch (err) {
+      status.textContent = "测试失败：" + (err.message || "未知错误");
+    }
+  }
+
+  function testStoredProvider(name, type) {
+    var p = findProvider(name);
+    if (!p) return;
+    var cfg = copyProvider(p);
+    cfg.api_key = getProviderKey(name);
+    runProviderTest(cfg, type);
+  }
+
+  function renderProviders() {
+    var builtinBox = $("providerBuiltin");
+    var customBox = $("providerList");
+    builtinBox.replaceChildren();
+    customBox.replaceChildren();
+    var builtinKeys = Object.keys(builtinModels);
+    if (!builtinKeys.length) {
+      builtinBox.appendChild(el("div", "empty", "暂无内置供应商（服务端未配置 API Key）"));
+    } else {
+      builtinKeys.forEach(function (key) {
+        var info = builtinModels[key] || {};
+        builtinBox.appendChild(providerRow({
+          name: key,
+          display_name: providerLabel(key),
+          base_url: "内置配置",
+          chat_model: info.chat_model || "",
+          embedding_model: info.embedding_model || "",
+          supports_chat: true,
+          supports_embedding: !!info.embedding_model
+        }, true));
+      });
+    }
+    if (!customProviders.length) {
+      customBox.appendChild(el("div", "empty", "暂无自定义供应商"));
+    } else {
+      customProviders.forEach(function (p) {
+        customBox.appendChild(providerRow(p, false));
+      });
+    }
+  }
+
+  function providerRow(p, builtin) {
+    var row = el("div", "doc-row");
+    var main = el("div", "doc-main");
+    var name = el("div", "doc-name", providerDisplay(p) + (builtin ? "" : "（自定义）"));
+    var meta = el("div", "doc-meta");
+    var parts = [];
+    if (p.supports_chat) parts.push("Chat: " + (p.chat_model || "未配置"));
+    if (p.supports_embedding) parts.push("Embedding: " + (p.embedding_model || "未配置"));
+    if (p.base_url) parts.push(p.base_url);
+    meta.textContent = parts.join(" · ");
+    main.appendChild(name);
+    main.appendChild(meta);
+    row.appendChild(main);
+    if (!builtin) {
+      var testBtn = el("button", "btn", "测试");
+      testBtn.addEventListener("click", function () {
+        testStoredProvider(p.name, p.supports_embedding ? "embedding" : "chat");
+      });
+      var editBtn = el("button", "btn", "编辑");
+      editBtn.addEventListener("click", function () { editProvider(p.name); });
+      var delBtn = el("button", "btn danger", "删除");
+      delBtn.addEventListener("click", function () { deleteProvider(p.name); });
+      row.appendChild(testBtn);
+      row.appendChild(editBtn);
+      row.appendChild(delBtn);
+    }
+    return row;
+  }
+
+  function renderProfile() {
+    var p = vectorProfile || {};
+    profileText.textContent = "向量: " + (p.embedding_model || "未配置") + " · " + (p.total_chunks || 0) + " 片段";
+    profileDot.className = "dot" + (p.total_chunks > 0 ? " ok" : "");
+    var box = $("vectorProfile");
+    box.replaceChildren();
+    var parts = [];
+    parts.push("Embedding 模型: " + (p.embedding_model || "未配置"));
+    parts.push("供应商: " + (p.embedding_provider || "未配置"));
+    parts.push("维度: " + (p.embedding_dimensions == null ? "未知" : p.embedding_dimensions));
+    parts.push("片段: " + (p.total_chunks || 0));
+    parts.push("文档: " + (p.total_documents || 0));
+    parts.forEach(function (part) { box.appendChild(el("span", null, part)); });
+    updateEmbeddingWarn();
+  }
+
+  function loadProfile() {
+    fetch("/v1/vector-store/profile", { headers: apiHeaders(false) })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d.success) throw new Error(d.error || "加载失败");
+        vectorProfile = d.data || {};
+        renderProfile();
+      })
+      .catch(function () {
+        vectorProfile = null;
+        profileText.textContent = "向量库不可用";
+        profileDot.className = "dot bad";
+        $("vectorProfile").replaceChildren(el("span", null, "无法读取向量库 profile"));
+      });
+  }
+
+  function loadProviderTab() {
+    renderProviders();
+    renderProfile();
+  }
+
+  async function rebuildVectorStore() {
+    var answer = window.prompt("重建将清空全部向量索引，输入 rebuild 确认：", "");
+    if (answer !== "rebuild" && answer !== "确认") return;
+    var status = $("providerTestStatus");
+    status.textContent = "重建中...";
+    try {
+      var resp = await fetch("/v1/vector-store/rebuild", {
+        method: "POST",
+        headers: apiHeaders(true),
+        body: JSON.stringify({ confirm: true })
+      });
+      var d = await resp.json();
+      if (resp.ok && d.success) {
+        status.textContent = d.data.message || "重建完成";
+        loadProfile();
+        loadDocs();
+      } else {
+        status.textContent = "重建失败：" + (d.error || ("HTTP " + resp.status));
+      }
+    } catch (err) {
+      status.textContent = "重建失败：" + (err.message || "未知错误");
+    }
+  }
+
+  $("providerForm").addEventListener("submit", saveProvider);
+  $("testChatBtn").addEventListener("click", function () {
+    try { runProviderTest(providerFormConfig(), "chat"); } catch (err) { $("providerTestStatus").textContent = "测试失败：" + err.message; }
+  });
+  $("testEmbedBtn").addEventListener("click", function () {
+    try { runProviderTest(providerFormConfig(), "embedding"); } catch (err) { $("providerTestStatus").textContent = "测试失败：" + err.message; }
+  });
+  $("resetProviderBtn").addEventListener("click", function () {
+    resetProviderForm();
+    $("providerTestStatus").textContent = "";
+  });
+  $("rebuildBtn").addEventListener("click", rebuildVectorStore);
+
+  loadHealth();
+  loadModels();
+  loadProfile();
+  loadTools();
+  loadLogs();
+  renderProviders();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*.so
+.Python
+
+# Database
+data/agent_logs.db
+
+# Vector DB
+data/chroma_db/
+chroma.sqlite3
+
+# Documents
+data/documents/*.pdf
+data/documents/*.md
+data/*.pdf
+!data/test_questions/*.md
+
+# Environment
+.env
+.venv/
+venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temp
+gen_docs.py
+pdf_extracted.txt

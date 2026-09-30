@@ -36,7 +36,7 @@ LLM_CONFIGS = {
     },
     "deepseek": {
         "api_key": os.getenv("DEEPSEEK_API_KEY", ""),
-        "base_url": os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com"),
+        "base_url": os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1"),
         "chat_model": os.getenv("DEEPSEEK_CHAT_MODEL", "deepseek-chat"),
         "embedding_model": "",
     },
@@ -92,3 +92,5 @@ RATE_LIMIT_TRUST_XFF = os.getenv("RATE_LIMIT_TRUST_XFF", "false").lower() == "tr
 EMBEDDING_MAX_BATCH = int(os.getenv("EMBEDDING_MAX_BATCH", "32"))
 EMBEDDING_TIMEOUT = float(os.getenv("EMBEDDING_TIMEOUT", "60"))
 EMBEDDING_MAX_RETRIES = int(os.getenv("EMBEDDING_MAX_RETRIES", "3"))
+# 修改记录：
+#   2026-09-30 deepseek profile 默认 base_url 补 /v1（修复 OpenAI SDK 缺 /v1 导致 404）

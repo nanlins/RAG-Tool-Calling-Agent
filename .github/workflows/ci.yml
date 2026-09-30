@@ -24,3 +24,13 @@ jobs:
           python-version: '3.13'
       - run: pip install "ruff>=0.9,<1"
       - run: ruff check backend/ tests/
+  docker:
+    runs-on: ubuntu-latest
+    if: hashFiles('Dockerfile') != ''
+    steps:
+      - uses: actions/checkout@v4
+      - name: 构建 Docker 镜像（验证 Dockerfile 与依赖清单一致）
+        run: docker build -t rag-agent:${{ github.sha }} .
+
+# 修改记录：
+#   2026-09-29 新增 docker job：CI 内验证 Dockerfile 可构建（含 python-multipart 等依赖完整性）；hashFiles 守卫防 Dockerfile 缺失空转

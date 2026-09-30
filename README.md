@@ -1,5 +1,7 @@
 # RAG + Tool Calling Agent
 
+[![CI](https://github.com/nanlins/RAG-Tool-Calling-Agent/actions/workflows/ci.yml/badge.svg)](https://github.com/nanlins/RAG-Tool-Calling-Agent/actions/workflows/ci.yml)
+
 一个从 0 到 1 实现的 AI Agent 应用：支持文档上传、RAG 混合检索、ReAct 工具调用、多轮会话、流式输出和完整日志。
 
 GitHub: https://github.com/nanlins/RAG-Tool-Calling-Agent
@@ -154,3 +156,15 @@ Dockerfile           Docker 镜像
 docker-compose.yml   容器编排
 .github/workflows/   CI
 ```
+## 历史说明
+
+本仓库早期历史中存在机器化提交形态：2026-08-17 19:38/19:39 两分钟 11+38 个 commit（逐文件提交规程产物）。
+该形态源于当时执行的"逐文件提交"自动化规程，不代表真实开发节奏，也不反映代码来源的全部事实；
+自 2026-09-29 起已改为功能分支 + 逻辑分组提交 + squash 合并，并以 CI 门禁（测试/lint/格式/构建）作为合并前提。
+
+## 修改记录
+
+- 2026-09-29：
+  - requirements.txt：补充 python-multipart 与 tzdata，修复全部 API 测试 RuntimeError 与镜像内上传链路
+  - .github/workflows/ci.yml：新增 docker job（hashFiles 守卫），CI 内验证 Dockerfile 可构建
+  - README.md：新增 CI badge、历史说明与修改记录小节

@@ -92,10 +92,12 @@ RATE_LIMIT_WINDOW = int(os.getenv("RATE_LIMIT_WINDOW", "60"))
 RATE_LIMIT_TRUST_XFF = os.getenv("RATE_LIMIT_TRUST_XFF", "false").lower() == "true"
 
 # Embedding
-EMBEDDING_MAX_BATCH = int(os.getenv("EMBEDDING_MAX_BATCH", "32"))
+# DashScope text-embedding-v3 单批上限 10；默认 10 兼容主流供应商，OpenAI 等可调大
+EMBEDDING_MAX_BATCH = int(os.getenv("EMBEDDING_MAX_BATCH", "10"))
 EMBEDDING_TIMEOUT = float(os.getenv("EMBEDDING_TIMEOUT", "60"))
 EMBEDDING_MAX_RETRIES = int(os.getenv("EMBEDDING_MAX_RETRIES", "3"))
 # 修改记录：
 #   2026-09-30 deepseek profile 默认 base_url 补 /v1（修复 OpenAI SDK 缺 /v1 导致 404）
+#   2026-10-02 EMBEDDING_MAX_BATCH 默认 32→10，修复 DashScope text-embedding-v3 单批上限 10 导致的 400
 #   2026-10-01 新增 EMBEDDING_PROVIDER：Embedding 与聊天供应商解耦，避免 LLM_PROVIDER=deepseek 时知识库初始化失败
 #   2026-10-01 移除内置模型名默认值（chat_model/embedding_model 默认置空，由用户显式配置）

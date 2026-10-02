@@ -1,5 +1,7 @@
 import os
+import shutil
 import tempfile
+import time
 from pathlib import Path
 
 import pytest
@@ -13,6 +15,24 @@ os.environ["APP_API_TOKEN"] = ""
 os.environ["APP_ENV"] = "development"
 os.environ["AUTH_DISABLED"] = "true"
 
+
+def _rmtree_retry(path: Path) -> None:
+    """带重试的目录清理：Windows 下 Chroma/SQLite 句柄未及时释放时会 PermissionError"""
+    for _ in range(5):
+        try:
+            shutil.rmtree(path, ignore_errors=True)
+            if not path.exists():
+                return
+        except PermissionError:
+            pass
+        time.sleep(0.2)
+    shutil.rmtree(path, ignore_errors=True)
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _cleanup_tmp():
+    yield
+    _rmtree_retry(_TMP)
 
 
 @pytest.fixture

@@ -2,7 +2,7 @@
 import logging
 import os
 
-from backend.config import CHROMA_DB_DIR, DEFAULT_PROVIDER, LLM_CONFIGS
+from backend.config import CHROMA_DB_DIR, EMBEDDING_PROVIDER, LLM_CONFIGS
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +37,7 @@ class VectorStore:
         """初始化默认 Embedding 函数 (使用 Chroma 内置的 OpenAI)"""
         # Chroma 的 OpenAI 嵌入函数会在 add/query 时自动调用
         # 我们自行管理 embedding, 存入预计算向量
-        self._openai_available = bool(LLM_CONFIGS.get(DEFAULT_PROVIDER, {}).get("embedding_model"))
+        self._openai_available = bool(LLM_CONFIGS.get(EMBEDDING_PROVIDER, {}).get("embedding_model"))
 
     def _current_metadata(self) -> dict:
         """返回集合级 metadata（始终返回新 dict，避免污染 Chroma 对象）"""
@@ -203,3 +203,6 @@ class VectorStore:
             name=self.collection_name,
             metadata={"hnsw:space": "cosine"},
         )
+
+# 修改记录：
+#   2026-10-01 Embedding 供应商判断改用 EMBEDDING_PROVIDER（与聊天供应商解耦）

@@ -4,7 +4,7 @@ import re
 from datetime import datetime
 from uuid import uuid4
 
-import fitz  # pymupdf
+import pymupdf
 
 
 class Document:
@@ -43,12 +43,12 @@ def parse_pdf(filepath: str) -> Document:
     filename = os.path.basename(filepath)
     doc_id = generate_id()
     
-    doc = fitz.open(filepath)
+    doc = pymupdf.open(filepath)
     content_parts = []
     metadata = {"pages": len(doc), "page_ranges": []}
     
     for page_num, page in enumerate(doc, 1):
-        text = page.get_text().strip()
+        text = page.get_text("text").strip()
         if text:
             content_parts.append(f"[第{page_num}页]\n{text}")
             metadata["page_ranges"].append(page_num)
@@ -108,3 +108,6 @@ def load_document(filepath: str) -> Document | None:
     if not parser:
         raise ValueError(f"不支持的文档格式: {ext}，仅支持 PDF/Markdown/TXT")
     return parser(filepath)
+
+# 修改记录：
+#   2026-10-01 fitz 弃用别名迁移为 pymupdf，page.get_text() 显式传 'text'（兼容 pymupdf>=1.23）

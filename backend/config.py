@@ -51,6 +51,9 @@ LLM_CONFIGS = {
 # 默认供应商
 DEFAULT_PROVIDER = os.getenv("LLM_PROVIDER", "dashscope")
 
+# Embedding 独立供应商（与聊天供应商解耦：聊天可用 DeepSeek，Embedding 用 Dashscope/OpenAI）
+EMBEDDING_PROVIDER = os.getenv("EMBEDDING_PROVIDER", "dashscope")
+
 # 切分参数
 CHUNK_SIZE = int(os.getenv("CHUNK_SIZE", "500"))
 CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", "50"))
@@ -94,3 +97,4 @@ EMBEDDING_TIMEOUT = float(os.getenv("EMBEDDING_TIMEOUT", "60"))
 EMBEDDING_MAX_RETRIES = int(os.getenv("EMBEDDING_MAX_RETRIES", "3"))
 # 修改记录：
 #   2026-09-30 deepseek profile 默认 base_url 补 /v1（修复 OpenAI SDK 缺 /v1 导致 404）
+#   2026-10-01 新增 EMBEDDING_PROVIDER：Embedding 与聊天供应商解耦，避免 LLM_PROVIDER=deepseek 时知识库初始化失败

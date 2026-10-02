@@ -2,9 +2,9 @@
 import time
 
 from backend.config import (
-    DEFAULT_PROVIDER,
     EMBEDDING_MAX_BATCH,
     EMBEDDING_MAX_RETRIES,
+    EMBEDDING_PROVIDER,
     EMBEDDING_TIMEOUT,
     LLM_CONFIGS,
 )
@@ -27,7 +27,7 @@ class EmbeddingClient:
             self._init_dynamic_client(provider_config, api_key)
             return
 
-        self.provider = provider or DEFAULT_PROVIDER
+        self.provider = provider or EMBEDDING_PROVIDER
         config = LLM_CONFIGS.get(self.provider)
         if not config:
             raise ValueError(f"未知供应商: {self.provider}，可选: {list(LLM_CONFIGS.keys())}")
@@ -114,3 +114,7 @@ class EmbeddingClient:
         embedding, _usage = self.embed("ping")
         self.dimensions = len(embedding)
         return self.dimensions
+
+# 修改记录：
+#   2026-10-01 Embedding 供应商改用 EMBEDDING_PROVIDER（与聊天 LLM_PROVIDER 解耦，
+#              修复 deepseek 无嵌入接口导致知识库初始化失败）

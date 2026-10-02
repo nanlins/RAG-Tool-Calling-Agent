@@ -34,7 +34,10 @@ class EmbeddingClient:
 
         model = config.get("embedding_model")
         if not model:
-            raise ValueError(f"供应商 {self.provider} 不支持 Embedding")
+            raise ValueError(
+                f"供应商 {self.provider} 未配置 Embedding 模型"
+                f"（请设置 {self.provider.upper()}_EMBEDDING_MODEL，或在网页供应商管理中指定）"
+            )
 
         self.model = model
         self.dimensions = None
@@ -118,3 +121,4 @@ class EmbeddingClient:
 # 修改记录：
 #   2026-10-01 Embedding 供应商改用 EMBEDDING_PROVIDER（与聊天 LLM_PROVIDER 解耦，
 #              修复 deepseek 无嵌入接口导致知识库初始化失败）
+#   2026-10-01 模型名不再内置，未配置时提示设置 *_EMBEDDING_MODEL（区分"未配置"与"不支持"）

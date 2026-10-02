@@ -20,30 +20,30 @@ DATABASE_PATH = _env_path("DATABASE_PATH", BASE_DIR / "data" / "agent_logs.db")
 for d in [DOCUMENTS_DIR, CHROMA_DB_DIR]:
     d.mkdir(parents=True, exist_ok=True)
 
-# LLM 配置 - 支持多供应商
+# LLM 配置 - 支持多供应商（模型名不内置，均由用户通过环境变量/网页供应商显式指定）
 LLM_CONFIGS = {
     "openai": {
         "api_key": os.getenv("OPENAI_API_KEY", ""),
         "base_url": os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1"),
-        "chat_model": os.getenv("OPENAI_CHAT_MODEL", "gpt-4o-mini"),
-        "embedding_model": os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-small"),
+        "chat_model": os.getenv("OPENAI_CHAT_MODEL", ""),
+        "embedding_model": os.getenv("OPENAI_EMBEDDING_MODEL", ""),
     },
     "dashscope": {
         "api_key": os.getenv("DASHSCOPE_API_KEY", ""),
         "base_url": os.getenv("DASHSCOPE_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1"),
-        "chat_model": os.getenv("DASHSCOPE_CHAT_MODEL", "qwen-plus"),
-        "embedding_model": os.getenv("DASHSCOPE_EMBEDDING_MODEL", "text-embedding-v3"),
+        "chat_model": os.getenv("DASHSCOPE_CHAT_MODEL", ""),
+        "embedding_model": os.getenv("DASHSCOPE_EMBEDDING_MODEL", ""),
     },
     "deepseek": {
         "api_key": os.getenv("DEEPSEEK_API_KEY", ""),
         "base_url": os.getenv("DEEPSEEK_BASE_URL", "https://api.deepseek.com/v1"),
-        "chat_model": os.getenv("DEEPSEEK_CHAT_MODEL", "deepseek-chat"),
+        "chat_model": os.getenv("DEEPSEEK_CHAT_MODEL", ""),
         "embedding_model": "",
     },
     "anthropic": {
         "api_key": os.getenv("ANTHROPIC_API_KEY", ""),
         "base_url": os.getenv("ANTHROPIC_BASE_URL", "https://api.anthropic.com"),
-        "chat_model": os.getenv("ANTHROPIC_CHAT_MODEL", "claude-sonnet-4-20250514"),
+        "chat_model": os.getenv("ANTHROPIC_CHAT_MODEL", ""),
         "embedding_model": "",
     },
 }
@@ -98,3 +98,4 @@ EMBEDDING_MAX_RETRIES = int(os.getenv("EMBEDDING_MAX_RETRIES", "3"))
 # 修改记录：
 #   2026-09-30 deepseek profile 默认 base_url 补 /v1（修复 OpenAI SDK 缺 /v1 导致 404）
 #   2026-10-01 新增 EMBEDDING_PROVIDER：Embedding 与聊天供应商解耦，避免 LLM_PROVIDER=deepseek 时知识库初始化失败
+#   2026-10-01 移除内置模型名默认值（chat_model/embedding_model 默认置空，由用户显式配置）

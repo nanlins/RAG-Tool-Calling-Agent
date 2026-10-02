@@ -55,17 +55,67 @@ docker compose up -d
 
 ## 环境变量
 
-核心变量见 `.env.example`：
+核心变量见 `.env.example`。**项目不内置任何模型名**，供应商与模型由用户显式配置（环境变量或网页「供应商管理」）。
 
-- `LLM_PROVIDER`：默认供应商，可填 `dashscope` 或 `deepseek`
-- `DASHSCOPE_API_KEY`：通义千问对话与 Embedding 必需
-- `DEEPSEEK_API_KEY`：DeepSeek 对话；DeepSeek 没有 Embedding，文档入库仍需 Dashscope
+- `LLM_PROVIDER`：聊天默认供应商，可填 `dashscope` / `deepseek` / `openai` / `anthropic`
+- `EMBEDDING_PROVIDER`：Embedding 供应商（与 `LLM_PROVIDER` 解耦），可填 `dashscope` / `openai`
+- `*_API_KEY`、`*_BASE_URL`、`*_CHAT_MODEL`、`*_EMBEDDING_MODEL`：各供应商的密钥/端点/模型，按需填写
 - `APP_API_TOKEN`：未配置时服务拒绝启动；本地演示用 `local-demo`，公网部署必须设置强随机 Token
 - `AUTH_DISABLED`：显式关闭鉴权，仅用于本地开发或自动化测试；生产环境必须为 `false`
 - `REDIS_URL`、`REDIS_ENABLED`：会话缓存，Redis 不可用自动使用 SQLite
 - `RATE_LIMIT_ENABLED`、`RATE_LIMIT_MAX`、`RATE_LIMIT_WINDOW`：可选限流；Redis 不可用时使用进程内计数兜底
 - `RATE_LIMIT_TRUST_XFF`：启用后信任 `X-Forwarded-For` 的第一个 IP（仅在可信反向代理后开启）
 - `CORS_ORIGINS`：允许访问的前端来源白名单
+
+## 供应商配置示例
+
+> RAG 链路需要 **两个能力**：聊天 LLM + Embedding。一个供应商可能只提供其一（如 DeepSeek 无 Embedding 接口），因此两者独立配置。
+
+### 示例一：DeepSeek 聊天 + 阿里云 DashScope Embedding（推荐）
+
+`.env`：
+
+```env
+# 聊天走 DeepSeek
+LLM_PROVIDER=deepseek
+DEEPSEEK_API_KEY=sk-你的DeepSeek密钥
+DEEPSEEK_BASE_URL=https://api.deepseek.com/v1
+DEEPSEEK_CHAT_MODEL=deepseek-chat
+
+# Embedding 走 DashScope
+EMBEDDING_PROVIDER=dashscope
+DASHSCOPE_API_KEY=sk-你的阿里云百炼密钥
+DASHSCOPE_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+DASHSCOPE_EMBEDDING_MODEL=text-embedding-v3
+```
+
+### 示例二：全部用 DashScope（对话 + Embedding）
+
+```env
+LLM_PROVIDER=dashscope
+EMBEDDING_PROVIDER=dashscope
+DASHSCOPE_API_KEY=sk-你的阿里云百炼密钥
+DASHSCOPE_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+DASHSCOPE_CHAT_MODEL=qwen-plus
+DASHSCOPE_EMBEDDING_MODEL=text-embedding-v3
+```
+
+### 示例三：全部用 OpenAI
+
+```env
+LLM_PROVIDER=openai
+EMBEDDING_PROVIDER=openai
+OPENAI_API_KEY=sk-你的OpenAI密钥
+OPENAI_BASE_URL=https://api.openai.com/v1
+OPENAI_CHAT_MODEL=gpt-4o-mini
+OPENAI_EMBEDDING_MODEL=text-embedding-3-small
+```
+
+### 网页添加供应商（无需改 .env、无需重启）
+
+在「供应商管理」页添加任意 OpenAI 兼容供应商（Kimi、智谱、DeepSeek、自定义网关等），保存后聊天/流式/RAG 检索/上传会自动携带该供应商配置。RAG 入库需要一个**配置了 Embedding 模型**的供应商。
+
+> 各供应商能力差异：DeepSeek / Anthropic 仅对话（无 Embedding）；DashScope、OpenAI 同时支持对话与 Embedding。
 
 ## API
 
@@ -168,3 +218,5 @@ docker-compose.yml   容器编排
   - requirements.txt：补充 python-multipart 与 tzdata，修复全部 API 测试 RuntimeError 与镜像内上传链路
   - .github/workflows/ci.yml：新增 docker job（hashFiles 守卫），CI 内验证 Dockerfile 可构建
   - README.md：新增 CI badge、历史说明与修改记录小节
+- 2026-10-01：Embedding 供应商解耦（EMBEDDING_PROVIDER）+ fitz→pymupdf 迁移 + 测试清理重试
+- 2026-10-01：移除内置模型名默认值；README 新增「供应商配置示例」（RAG/Embedding 三种组合与网页配置说明）

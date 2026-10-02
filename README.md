@@ -29,6 +29,17 @@ GitHub: https://github.com/nanlins/RAG-Tool-Calling-Agent
 | 前端 | 原生 HTML + JavaScript | 5 个功能页单页应用 |
 | 测试 | pytest + pytest-asyncio | 60 个自动化测试 |
 
+## 基础设施与端口（Docker Compose 内建）
+
+| 服务 | 镜像 | 宿主端口 → 容器端口 | 用途 |
+|---|---|---|---|
+| rag-agent | 本地构建（`python:3.13-slim`） | `8081 → 8081` | API + 前端 |
+| redis | `redis:7-alpine` | `6379 → 6379` | 会话缓存（可选；`REDIS_ENABLED=false` 时自动降级 SQLite） |
+
+- 向量库：Chroma 本地目录持久化（`data/chroma_db`），无需外部服务
+- 无 PostgreSQL：历史/会话用 SQLite（`data/agent_logs.db`）
+- 运行时需 Python 3.13+（本地）；Docker 方式无需本机装任何服务
+
 ## 快速开始
 
 ```bash
@@ -220,3 +231,5 @@ docker-compose.yml   容器编排
   - README.md：新增 CI badge、历史说明与修改记录小节
 - 2026-10-01：Embedding 供应商解耦（EMBEDDING_PROVIDER）+ fitz→pymupdf 迁移 + 测试清理重试
 - 2026-10-01：移除内置模型名默认值；README 新增「供应商配置示例」（RAG/Embedding 三种组合与网页配置说明）
+
+- 2026-10-02：补充基础设施与端口（redis:7-alpine/6379 可选、rag-agent 8081、Chroma 本地、无 PG）

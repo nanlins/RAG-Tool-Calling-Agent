@@ -210,6 +210,8 @@ class Agent:
                 if not tool_calls:
                     break
 
+                rag_context_texts: list[str] = []
+
                 for tc in tool_calls:
                     fn = tc.get("function", {})
                     tool_name = fn.get("name", "")
@@ -300,11 +302,15 @@ class Agent:
                                     f"(relevance: {r.get('score', 0):.2f})\n{r.get('text', '')}"
                                 )
                             context_text = "\n---\n".join(context_lines)
-                        messages.append({
-                            "role": "user",
-                            "content": "以下是知识库检索结果，请优先基于这些内容回答并引用来源：\n\n" + context_text,
-                        })
+                        rag_context_texts.append(context_text)
                         await emit_event({"type": "context", "content": context_text[:2000]})
+
+                if rag_context_texts:
+                    messages.append({
+                        "role": "user",
+                        "content": "以下是知识库检索结果，请优先基于这些内容回答并引用来源：\n\n"
+                        + "\n---\n".join(rag_context_texts),
+                    })
 
                 if iteration >= max_iterations:
                     loop_exhausted = True
@@ -556,3 +562,6 @@ class Agent:
         """合并 Token 用量"""
         for key in total:
             total[key] = total.get(key, 0) + add.get(key, 0)
+# 修改记录：
+#   2026-10-02 修复多工具调用时检索上下文 user 消息插入 tool 消息之间导致 DeepSeek 400（insufficient tool messages）
+#             检索上下文统一在所有 tool 消息之后追加，保证 assistant tool_calls 紧跟全部 tool 消息
